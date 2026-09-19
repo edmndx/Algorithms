@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+  <meta charset="UTF-8" />
+  <title>Value label regression checks</title>
+  <pre id="result">Running…</pre>
+  <script type="module">
+    import '../../src/visualization/visualization.css';
+    import { createInitializedScene } from '../../src/scene/sceneState.ts';
+    import { renderArray } from '../../src/visualization/renderArray.ts';
+    import { renderMatrix } from '../../src/visualization/renderMatrix.ts';
+    import { renderLinkedList } from '../../src/visualization/renderLinkedList.ts';
+    import { renderTree } from '../../src/visualization/renderTree.ts';
+    import { renderGraph } from '../../src/visualization/renderGraph.ts';
+
+    const values = [42, 0, -7, 2.5, 'A', '<b>'];
+    const expected = ['42', '0', '-7', '2.5', 'A', '<b>'];
+    const ids = values.map((_, index) => `node-${index}`);
+    const failures = [];
+
+    function check(name, render, scene, labels = expected) {
+      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      svg.style.width = '630px';
+      svg.style.height = '836px';
+      svg.style.setProperty('--font-mono', 'monospace');
+      document.body.append(svg);
+      render(svg, scene);
+      const actual = Array.from(
+        svg.querySelectorAll('.visualization-number'),
+        (node) => node.textContent,
+      );
+      if (JSON.stringify(actual) !== JSON.stringify(labels)) {
+        failures.push(
+          `${name}: expected ${JSON.stringify(labels)}, got ${JSON.stringify(actual)}`,
+        );
+      }
+      if (svg.querySelector('b'))
+        failures.push(`${name}: value interpreted as HTML`);
+      if (name === 'graph' || name === 'linked list') {
+        for (const label of svg.querySelectorAll('.visualization-number')) {
+          const matrix = label.getScreenCTM();
+          const fontSize = parseFloat(getComputedStyle(label).fontSize);
+          if (fontSize * Math.hypot(matrix.a, matrix.b) < 12)
+            failures.push(
+              `${name}: value label is smaller than 12 screen pixels`,
+            );
+        }
+      }
+      if (scene.structure === 'graph') {
+        const bounds = svg.querySelector('.visualization-graph').getBBox();
+        const viewBox = svg.viewBox.baseVal;
+        if (
+          bounds.x < viewBox.x ||
+          bounds.y < viewBox.y ||
+          bounds.x + bounds.width > viewBox.x + viewBox.width ||
+          bounds.y + bounds.height > viewBox.y + viewBox.height
+        )
+          failures.push(`${name}: graph content extends outside its viewBox`);
+      }
+      for (const item of svg.querySelectorAll('.visualization-array-item')) {
+        const value = item.querySelector('.visualization-number').getBBox();
+        const index = item.querySelector('.visualization-index').getBBox();
+        if (
+          value.y < index.y + index.height &&
+          index.y < value.y + value.height
+        )
+          failures.push(`${name}: value and index labels overlap`);
+      }
+      svg.remove();
+    }
+
+    check('array', renderArray, {
+      ...createInitializedScene('array'),
+      values,
+      itemIds: ids,
+    });
+    check('matrix', renderMatrix, {
+      ...createInitializedScene('matrix'),
+      values: [values],
+      itemIds: [ids],
+    });
+    check('linked list', renderLinkedList, {
+      ...createInitializedScene('linked-list'),
+      headId: ids[0],
+      tailId: ids.at(-1),
+      nodes: values.map((value, index) => ({
+        id: ids[index],
+        value,
+        nextId: ids[index + 1] ?? null,
+      })),
+    });
+    const nodes = values.map((value, index) => ({
+      id: ids[index],
+      value,
+      label: 'not the value',
+      children: index === 0 ? ids.slice(1) : [],
+    }));
+    check('tree', renderTree, {
+      ...createInitializedScene('tree'),
+      rootId: ids[0],
+      nodes,
+    });
+    check('graph', renderGraph, {
+      ...createInitializedScene('graph'),
+      nodes,
+    });
+    check(
+      'graph metric bounds',
+      renderGraph,
+      {
+        ...createInitializedScene('graph'),
+        nodes: [{ id: 'A' }, { id: 'B' }],
+        layout: 'fixed',
+        positions: { A: { x: 0, y: 0 }, B: { x: 1, y: 0 } },
+        nodeMetrics: {
+          A: { discovery: 159, finish: 160 },
+          B: { discovery: 159, finish: 160 },
+        },
+      },
+      ['A', 'B'],
+    );
+    check(
+      'graph loops and parallel edges',
+      renderGraph,
+      {
+        ...createInitializedScene('graph'),
+        nodes: [{ id: 'A' }, { id: 'B' }],
+        edges: [
+          ...Array.from({ length: 11 }, (_, index) => ({
+            id: `edge-${index}`,
+            from: 'A',
+            to: 'B',
+            weight: index,
+            directed: true,
+          })),
+          ...Array.from({ length: 8 }, (_, index) => ({
+            id: `loop-${index}`,
+            from: 'A',
+            to: 'A',
+            weight: index,
+            directed: true,
+          })),
+        ],
+      },
+      ['A', 'B'],
+    );
+    for (const [structure, render] of [
+      ['tree', renderTree],
+      ['graph', renderGraph],
+    ]) {
+      check(
+        `${structure} label and ID fallback`,
+        render,
+        {
+          ...createInitializedScene(structure),
+          rootId: 'root',
+          nodes: [
+            { id: 'root', label: 'Start', children: ['B'] },
+            { id: 'B', children: [] },
+          ],
+        },
+        ['Start', 'B'],
+      );
+    }
+    document.querySelector('#result').textContent = failures.length
+      ? `FAIL\n${failures.join('\n')}`
+      : 'PASS: values visible in all five scene families; tree/graph labels and IDs preserved.';
+    document.title = failures.length ? 'FAIL' : 'PASS';
+  </script>
+</html>

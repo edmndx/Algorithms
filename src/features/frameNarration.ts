@@ -104,7 +104,23 @@ export function createFrameNarrationEntries(
     .map((frame, index) => ({
       sequence: index + 1,
       level: 'log' as const,
-      text: formatFrameOperation(frame.operation),
+      text: [
+        formatFrameOperation(frame.operation),
+        ...frame.commands.flatMap((command) => {
+          switch (command.type) {
+            case 'graph.distance':
+              return [
+                `${command.nodeId}: distance = ${command.distance ?? '∞'}.`,
+              ];
+            case 'graph.nodeMetric':
+              return [`${command.nodeId}: ${command.name} = ${command.value}.`];
+            case 'graph.frontier':
+              return [`Frontier: [${command.nodeIds.join(', ')}].`];
+            default:
+              return [];
+          }
+        }),
+      ].join(' '),
       source: frame.source,
     }))
     .reverse();

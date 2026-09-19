@@ -76,7 +76,9 @@ export const renderArray: D3RenderFunction<ArraySceneState> = (
       y: numeric
         ? Math.min(valueY, baselineY)
         : TOP_PADDING + (CHART_HEIGHT - NONNUMERIC_HEIGHT) / 2,
-      height: numeric ? Math.abs(valueY - baselineY) : NONNUMERIC_HEIGHT,
+      height: numeric
+        ? Math.max(3, Math.abs(valueY - baselineY))
+        : NONNUMERIC_HEIGHT,
       valueKind: numeric ? 'numeric' : 'nonnumeric',
     };
   });
@@ -99,13 +101,15 @@ export const renderArray: D3RenderFunction<ArraySceneState> = (
     .join('defs')
     .attr('class', 'visualization-array-definitions');
   const gradients = definitions
-    .selectAll<SVGLinearGradientElement, 'blue' | 'red'>(
+    .selectAll<SVGLinearGradientElement, ArrayItemDatum>(
       'linearGradient.visualization-array-gradient',
     )
-    .data(['blue', 'red'], (color) => color)
+    .data(data, (datum) => datum.id)
     .join('linearGradient')
     .attr('class', 'visualization-array-gradient')
-    .attr('id', (color) => `visualization-array-${color}-gradient`)
+    .classed('visualization-compared', (datum) => datum.isCompared)
+    .classed('visualization-marked', (datum) => datum.isMarked)
+    .attr('id', (datum) => `visualization-array-${datum.id}-gradient`)
     .attr('x1', '0%')
     .attr('y1', '100%')
     .attr('x2', '0%')
@@ -178,6 +182,7 @@ export const renderArray: D3RenderFunction<ArraySceneState> = (
 
   const bars = items
     .select<SVGRectElement>('rect.visualization-bar')
+    .attr('fill', (datum) => `url('#visualization-array-${datum.id}-gradient')`)
     .attr('data-value-kind', (datum) => datum.valueKind)
     .attr('x', 0)
     .attr('width', BAR_WIDTH)

@@ -36,6 +36,14 @@
     function labels(scene) {
       const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
       renderGraph(svg, scene);
+      for (const metric of svg.querySelectorAll(
+        '.visualization-distance tspan',
+      )) {
+        if (!/^(?:-?\d+(?:\.\d+)?(?:e[+-]?\d+)?|∞)$/i.test(metric.textContent))
+          throw new Error('Graph annotations must contain only numbers');
+        if (Number(metric.getAttribute('y')) >= -24)
+          throw new Error('Graph annotations must stay above the node');
+      }
       return Array.from(
         svg.querySelectorAll('.visualization-graph-node'),
         (node) => [
@@ -61,11 +69,11 @@
           equal(
             labels(scene),
             [
-              ['A', 'distance: 0'],
-              ['B', 'distance: 1'],
-              ['C', 'distance: 1'],
-              ['D', 'distance: 2'],
-              ['E', 'distance: ∞'],
+              ['A', '0'],
+              ['B', '1'],
+              ['C', '1'],
+              ['D', '2'],
+              ['E', '∞'],
             ],
             'distance labels',
           );
@@ -89,7 +97,7 @@
           const { scene } = await run(
             'breadth-first-search',
             (source) =>
-              `const __trace_distances0 = 99;\n${source.replace('D: []', "D: ['A']").replace("traverse(network, 'A')", "traverse(network, 'B')")}`,
+              `const __trace_distances0 = 99;\n${source.replace('D: []', "D: ['A']").replace("breadthFirstSearch(network, 'A')", "breadthFirstSearch(network, 'B')")}`,
           );
           equal(
             ['A', 'B', 'C', 'D', 'E'].map((id) => scene.distances[id]),
@@ -117,11 +125,7 @@
             undefined,
             'unvisited E has no timestamps',
           );
-          equal(
-            labels(scene)[0],
-            ['A', 'discovery: 1, finish: 8'],
-            'named DFS metrics',
-          );
+          equal(labels(scene)[0], ['A', '1, 8'], 'numeric DFS metrics');
           for (let step = 0; step <= timeline.operationCount; step++) {
             for (const metrics of Object.values(
               getFrameScene(timeline, step).nodeMetrics,
@@ -141,7 +145,7 @@
           const { scene } = await run(
             'depth-first-search',
             (source) =>
-              `const __trace_time0 = 99;\n${source.replace('D: []', "D: ['A']").replace("traverse(network, 'A')", "traverse(network, 'B')")}`,
+              `const __trace_time0 = 99;\n${source.replace('D: []', "D: ['A']").replace("depthFirstSearch(network, 'A')", "depthFirstSearch(network, 'B')")}`,
           );
           equal(
             ['A', 'B', 'C', 'D'].map((id) => scene.nodeMetrics[id]),
@@ -162,11 +166,11 @@
           equal(
             labels(scene),
             [
-              ['A', 'distance: 0'],
-              ['B', 'distance: 3'],
-              ['C', 'distance: 1'],
-              ['D', 'distance: 4'],
-              ['E', 'distance: ∞'],
+              ['A', '0'],
+              ['B', '3'],
+              ['C', '1'],
+              ['D', '4'],
+              ['E', '∞'],
             ],
             'weighted shortest-path distances',
           );
@@ -187,11 +191,7 @@
             ],
             'topological positions',
           );
-          equal(
-            labels(scene)[0],
-            ['A', 'indegree: 0, order: 1'],
-            'named topological metrics',
-          );
+          equal(labels(scene)[0], ['A', '0, 1'], 'numeric topological metrics');
           const counted = timeline.trace.frames.findIndex(
             (frame) =>
               frame.operation.type === 'assign' &&

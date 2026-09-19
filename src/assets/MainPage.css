@@ -59,10 +59,10 @@
 }
 
 .main-page-editor-workbench {
-  display: grid;
+  display: flex;
   min-width: 0;
   min-height: 0;
-  grid-template-rows: minmax(0, 1fr) 12.5rem;
+  flex-direction: column;
   border-left: 1px solid var(--border);
   background: color-mix(in oklab, var(--panel) 60%, transparent);
 }
@@ -940,6 +940,7 @@ button.visualization-toolbar-placeholder:disabled {
 .console-panel {
   display: flex;
   min-height: 0;
+  flex: 1 0 12.5rem;
   overflow: hidden;
   flex-direction: column;
   border-top: 1px solid var(--border);
@@ -952,6 +953,14 @@ button.visualization-toolbar-placeholder:disabled {
   justify-content: space-between;
   border-bottom: 1px solid var(--border);
   padding: 0.5rem 1rem;
+}
+
+.console-panel::details-content {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .console-panel-heading {
@@ -1137,7 +1146,7 @@ button.visualization-toolbar-placeholder:disabled {
 .code-editor-panel-editor {
   position: relative;
   min-height: 0;
-  flex: 1;
+  flex: 0 1 auto;
 }
 
 .code-editor-panel-loading {
@@ -1195,4 +1204,27 @@ button.visualization-toolbar-placeholder:disabled {
   .app-header-file-dropdown {
     animation-duration: 0.01ms;
   }
+}
+
+.console-panel-header {
+  cursor: pointer;
+}
+.console-panel:not([open]) {
+  flex: 0 0 auto;
+}
+.main-page-editor-workbench:has(.console-panel:not([open])) .code-editor-panel,
+.main-page-editor-workbench:has(.console-panel:not([open]))
+  .code-editor-panel-editor {
+  flex: 1;
+}
+.console-panel:not([open]) .console-panel-output {
+  display: none;
+}
+
+.console-panel-header::after {
+  content: '+';
+  color: var(--muted-foreground);
+}
+.console-panel[open] .console-panel-header::after {
+  content: '−';
 }

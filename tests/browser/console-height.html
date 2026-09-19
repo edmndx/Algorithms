@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+  <meta charset="UTF-8" /><title>Console height checks</title>
+  <pre id="result">Running</pre>
+  <div id="root"></div>
+  <script type="module">
+    import React, { useLayoutEffect } from 'react';
+    import { createRoot } from 'react-dom/client';
+    import { loader } from '@monaco-editor/react';
+    import { CodeEditorPanel } from '../../src/ui/components/CodeEditorPanel.tsx';
+    import { ConsolePanel } from '../../src/ui/components/ConsolePanel.tsx';
+    import { useEditorTabs } from '../../src/ui/components/useEditorTabs.ts';
+    import catalog from '../../src/data/catalog/algorithms.json';
+    import '../../src/assets/styles.css';
+    import '../../src/assets/MainPage.css';
+
+    const failures = [];
+    const check = (condition, message) => {
+      if (!condition) failures.push(message);
+    };
+    const settle = async () => {
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      await new Promise(requestAnimationFrame);
+      await new Promise(requestAnimationFrame);
+    };
+    const source = catalog.find(
+      (entry) => entry.id === 'breadth-first-search',
+    ).code;
+    let tabs;
+    function Fixture() {
+      const editorTabs = useEditorTabs({
+        fileName: 'bfs.js',
+        initialCode: source,
+        initialStructure: 'graph',
+      });
+      useLayoutEffect(() => {
+        tabs = editorTabs;
+      });
+      return React.createElement(
+        'div',
+        {
+          className: 'main-page-editor-workbench',
+          style: { width: 520, height: 900 },
+        },
+        React.createElement(CodeEditorPanel, {
+          editorTabs,
+          activeSourceLocation: null,
+        }),
+        React.createElement(ConsolePanel, {
+          entries: Array.from({ length: 80 }, (_, i) => ({
+            sequence: i + 1,
+            level: 'log',
+            text: 'Step ' + i,
+          })),
+        }),
+      );
+    }
+    createRoot(document.querySelector('#root')).render(
+      React.createElement(Fixture),
+    );
+    try {
+      const monaco = await loader.init();
+      for (let i = 0; i < 100 && !monaco.editor.getEditors().length; i++)
+        await settle();
+      const editor = monaco.editor.getEditors()[0];
+      if (!editor) throw new Error('Editor did not mount');
+      const consolePanel = () => document.querySelector('.console-panel');
+      const workbench = document.querySelector('.main-page-editor-workbench');
+      const gap = () =>
+        consolePanel().getBoundingClientRect().top -
+        document.querySelector('.monaco-editor').getBoundingClientRect().top -
+        editor.getContentHeight();
+      await settle();
+      check(
+        Math.abs(gap()) < 2,
+        'BFS console starts immediately after the code',
+      );
+      const header = document.querySelector('.console-panel-header');
+      const output = document.querySelector('.console-panel-output');
+      header.click();
+      await settle();
+      check(!consolePanel().open, 'Minus collapses the console');
+      check(
+        output.getBoundingClientRect().height === 0,
+        'Collapsed console output is hidden',
+      );
+      check(
+        Math.abs(
+          consolePanel().getBoundingClientRect().bottom -
+            workbench.getBoundingClientRect().bottom,
+        ) < 2,
+        'Collapsed console drops to the bottom of the workbench',
+      );
+      check(
+        consolePanel().getBoundingClientRect().height <=
+          header.getBoundingClientRect().height + 2,
+        'Only the console header remains visible',
+      );
+      check(
+        getComputedStyle(header, '::after').content === '"+"',
+        'Collapsed header shows plus',
+      );
+      header.click();
+      await settle();
+      check(consolePanel().open, 'Plus expands the console');
+      check(
+        Math.abs(gap()) < 2,
+        'Expanded console returns directly below the code',
+      );
+      check(
+        Math.abs(
+          consolePanel().getBoundingClientRect().bottom -
+            workbench.getBoundingClientRect().bottom,
+        ) < 2,
+        'Expanded console fills the remaining workbench height',
+      );
+      tabs.addTab();
+      await settle();
+      check(Math.abs(gap()) < 2, 'Empty tab leaves no blank editor region');
+      tabs.updateActiveCode(
+        'const message = "' + 'wrapped text '.repeat(30) + '";',
+      );
+      await settle();
+      workbench.style.width = '320px';
+      await settle();
+      check(Math.abs(gap()) < 2, 'Wrapped lines resize the editor');
+      tabs.updateActiveCode(
+        Array.from(
+          { length: 150 },
+          (_, i) => 'const value' + i + ' = ' + i + ';',
+        ).join('\n'),
+      );
+      await settle();
+      check(
+        editor.getContentHeight() > editor.getLayoutInfo().height,
+        'Long code keeps an editor scrollbar',
+      );
+      check(
+        consolePanel().getBoundingClientRect().height >= 199,
+        'Long code leaves the console visible',
+      );
+      check(
+        consolePanel().getBoundingClientRect().bottom <=
+          workbench.getBoundingClientRect().bottom + 1,
+        'Console stays in the workbench',
+      );
+      const expandedEditorHeight = editor.getLayoutInfo().height;
+      header.click();
+      await settle();
+      check(
+        editor.getLayoutInfo().height > expandedEditorHeight,
+        'Collapsing the console frees editor space',
+      );
+      header.click();
+      await settle();
+      tabs.selectTab(tabs.primaryTabId);
+      await settle();
+      workbench.style.width = '520px';
+      await settle();
+      check(
+        Math.abs(gap()) < 2,
+        'Returning to short code shrinks the editor again',
+      );
+      check(
+        output.scrollHeight > output.clientHeight,
+        'Console output scrolls within its panel',
+      );
+    } catch (error) {
+      failures.push(error.message);
+    }
+    document.querySelector('#result').textContent = failures.length
+      ? 'FAIL: ' + failures.join('; ')
+      : 'PASS: console follows code, wrapping, tabs, long files and collapse';
+    document.title = failures.length ? 'FAIL' : 'PASS';
+  </script>
+</html>

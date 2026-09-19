@@ -8,13 +8,13 @@ interface ConsolePanelProps {
 
 export function ConsolePanel({ entries, onSelect }: ConsolePanelProps) {
   return (
-    <section className="console-panel">
-      <div className="console-panel-header">
+    <details className="console-panel" open>
+      <summary className="console-panel-header">
         <h2 className="console-panel-heading">
           <Terminal className="console-panel-icon" aria-hidden="true" />
           Console
         </h2>
-      </div>
+      </summary>
       <div className="console-panel-output" role="log" aria-live="polite">
         {entries.map((entry) => (
           <div
@@ -45,6 +45,6 @@ export function ConsolePanel({ entries, onSelect }: ConsolePanelProps) {
           </div>
         ))}
       </div>
-    </section>
+    </details>
   );
 }

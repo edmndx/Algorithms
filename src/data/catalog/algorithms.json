@@ -5,7 +5,7 @@
     "category": "Array",
     "structure": "array",
     "description": "Locate a target in a sorted array by repeatedly halving the search range.",
-    "code": "const array = [1, 3, 5, 8, 13, 21, 34];\nconst target = 13;\n\nfunction binarySearch(values, searchTarget) {\n  let left = 0;\n  let right = values.length - 1;\n\n  while (left <= right) {\n    const middle = Math.floor((left + right) / 2);\n\n    if (values[middle] === searchTarget) return middle;\n\n    if (values[middle] < searchTarget) {\n      left = middle + 1;\n    } else {\n      right = middle - 1;\n    }\n  }\n\n  return -1;\n}\n\nconst answer = binarySearch(array, target);"
+    "code": "// Input\n// Sorted ascending. Returns the target index, or -1.\nconst array = [1, 3, 5, 8, 13, 21, 34];\nconst target = 13;\n\n// Algorithm\nfunction binarySearch(values, searchTarget) {\n  let left = 0;\n  let right = values.length - 1;\n\n  while (left <= right) {\n    const middle = Math.floor((left + right) / 2);\n\n    if (values[middle] === searchTarget) return middle;\n\n    if (values[middle] < searchTarget) {\n      left = middle + 1;\n    } else {\n      right = middle - 1;\n    }\n  }\n\n  return -1;\n}\n\n// Run\nconst answer = binarySearch(array, target);"
   },
   {
     "id": "breadth-first-search",
@@ -13,7 +13,7 @@
     "category": "Graph",
     "structure": "graph",
     "description": "Explore a graph in FIFO order while distinguishing discovery from processing.",
-    "code": "const network = { A: ['B', 'C'], B: ['D'], C: ['D'], D: [], E: [] };\n\nfunction traverse(graph, start) {\n  const seen = new Set([start]);\n  const queue = [start];\n  const order = [];\n\n  while (queue.length > 0) {\n    const node = queue.shift();\n    order.push(node);\n    for (const neighbor of graph[node]) {\n      if (!seen.has(neighbor)) {\n        seen.add(neighbor);\n        queue.push(neighbor);\n      }\n    }\n  }\n\n  return order;\n}\n\nconsole.log(traverse(network, 'A'));"
+    "code": "// Input\n// Adjacency list with every vertex defined. Returns reachable vertices in BFS order.\nconst network = { A: ['B', 'C'], B: ['D'], C: ['D'], D: [], E: [] };\n\n// Algorithm\nfunction breadthFirstSearch(graph, start) {\n  const seen = new Set([start]);\n  const queue = [start];\n  const order = [];\n\n  while (queue.length > 0) {\n    const node = queue.shift();\n    order.push(node);\n    for (const neighbor of graph[node]) {\n      if (!seen.has(neighbor)) {\n        seen.add(neighbor);\n        queue.push(neighbor);\n      }\n    }\n  }\n\n  return order;\n}\n\n// Run\nconst answer = breadthFirstSearch(network, 'A');"
   },
   {
     "id": "depth-first-search",
@@ -21,15 +21,15 @@
     "category": "Graph",
     "structure": "graph",
     "description": "Explore graph neighbors recursively while keeping the active path and completed visits distinct.",
-    "code": "const network = { A: ['B', 'C'], B: ['D'], C: ['D'], D: [], E: [] };\n\nfunction traverse(graph, start) {\n  const seen = new Set();\n  const order = [];\n\n  function visit(node) {\n    seen.add(node);\n    order.push(node);\n    for (const neighbor of graph[node]) {\n      if (!seen.has(neighbor)) {\n        visit(neighbor);\n      }\n    }\n  }\n\n  visit(start);\n  return order;\n}\n\nconsole.log(traverse(network, 'A'));"
+    "code": "// Input\n// Adjacency list with every vertex defined. Returns reachable vertices in DFS order.\nconst network = { A: ['B', 'C'], B: ['D'], C: ['D'], D: [], E: [] };\n\n// Algorithm\nfunction depthFirstSearch(graph, start) {\n  const seen = new Set();\n  const order = [];\n\n  function visit(node) {\n    seen.add(node);\n    order.push(node);\n    for (const neighbor of graph[node]) {\n      if (!seen.has(neighbor)) {\n        visit(neighbor);\n      }\n    }\n  }\n\n  visit(start);\n  return order;\n}\n\n// Run\nconst answer = depthFirstSearch(network, 'A');"
   },
   {
     "id": "binary-tree-traversal",
-    "name": "Binary Tree Traversal",
+    "name": "Inorder Traversal",
     "category": "Tree",
     "structure": "tree",
     "description": "Visit a complete binary tree in inorder through recursive descent and return.",
-    "code": "const T = { value: 4, left: { value: 2, left: { value: 1, left: null, right: null }, right: { value: 3, left: null, right: null } }, right: { value: 6, left: { value: 5, left: null, right: null }, right: { value: 7, left: null, right: null } } };\nfunction inorder(root) {\n  const output = [];\n  function walk(node) {\n    if (node === null) return;\n    walk(node.left);\n    output.push(node.value);\n    walk(node.right);\n  }\n  walk(root);\n  return output;\n}\nconst answer = inorder(T);"
+    "code": "// Input\n// Binary tree with null children. Returns values in inorder.\nconst T = {\n  value: 4,\n  left: {\n    value: 2,\n    left: { value: 1, left: null, right: null },\n    right: { value: 3, left: null, right: null },\n  },\n  right: {\n    value: 6,\n    left: { value: 5, left: null, right: null },\n    right: { value: 7, left: null, right: null },\n  },\n};\n\n// Algorithm\nfunction inorder(root) {\n  const output = [];\n  function walk(node) {\n    if (node === null) return;\n    walk(node.left);\n    output.push(node.value);\n    walk(node.right);\n  }\n  walk(root);\n  return output;\n}\n\n// Run\nconst answer = inorder(T);"
   },
   {
     "id": "sliding-window",
@@ -37,7 +37,7 @@
     "category": "Array",
     "structure": "array",
     "description": "Find the largest sum of a fixed-size contiguous window by adding the entering value and removing the leaving value.",
-    "code": "const numbers = [2, 1, 5, 1, 3, 2];\nconst size = 3;\n\nfunction windowBest(values, width) {\n  let sum = 0;\n  for (let right = 0; right < width; right++) {\n    sum += values[right];\n  }\n  let best = sum;\n  for (let right = width; right < values.length; right++) {\n    sum += values[right];\n    sum -= values[right - width];\n    if (sum > best) {\n      best = sum;\n    }\n  }\n  return best;\n}\n\nconsole.log(windowBest(numbers, size));"
+    "code": "// Input\n// Nonempty array; 1 <= size <= numbers.length. Returns the maximum window sum.\nconst numbers = [2, 1, 5, 1, 3, 2];\nconst size = 3;\n\n// Algorithm\nfunction maximumWindowSum(values, width) {\n  let sum = 0;\n  for (let right = 0; right < width; right++) {\n    sum += values[right];\n  }\n  let best = sum;\n  for (let right = width; right < values.length; right++) {\n    sum += values[right];\n    sum -= values[right - width];\n    if (sum > best) {\n      best = sum;\n    }\n  }\n  return best;\n}\n\n// Run\nconst answer = maximumWindowSum(numbers, size);"
   },
   {
     "id": "flood-fill",
@@ -45,7 +45,7 @@
     "category": "Matrix",
     "structure": "matrix",
     "description": "Fill a connected region while preserving the complete grid throughout traversal.",
-    "code": "const grid = [[1,1,0],[1,0,0],[1,1,1]];\nfunction flood(image, startRow, startCol, color) {\n  const original = image[startRow][startCol];\n  if (original === color) return image;\n  function fill(row, col) {\n    if (row < 0 || row >= image.length || col < 0 || col >= image[0].length) return;\n    if (image[row][col] !== original) return;\n    image[row][col] = color;\n    fill(row - 1, col);\n    fill(row, col + 1);\n    fill(row + 1, col);\n    fill(row, col - 1);\n  }\n  fill(startRow, startCol);\n  return image;\n}\nconst answer = flood(grid, 0, 0, 2);"
+    "code": "// Input\n// Nonempty rectangular grid and a valid start cell. Mutates and returns the grid.\nconst grid = [\n  [1, 1, 0],\n  [1, 0, 0],\n  [1, 1, 1],\n];\n\n// Algorithm\nfunction floodFill(image, startRow, startCol, color) {\n  const original = image[startRow][startCol];\n  if (original === color) return image;\n  function fill(row, col) {\n    if (row < 0 || row >= image.length || col < 0 || col >= image[0].length)\n      return;\n    if (image[row][col] !== original) return;\n    image[row][col] = color;\n    fill(row - 1, col);\n    fill(row, col + 1);\n    fill(row + 1, col);\n    fill(row, col - 1);\n  }\n  fill(startRow, startCol);\n  return image;\n}\n\n// Run\nconst answer = floodFill(grid, 0, 0, 2);"
   },
   {
     "id": "maximum-subarray",
@@ -53,7 +53,7 @@
     "category": "Array",
     "structure": "array",
     "description": "Use Kadane's algorithm to find the largest sum of a contiguous subarray.",
-    "code": "const numbers = [-2, 1, -3, 4, -1, 2, 1, -5, 4];\n\nfunction maximumSubarray(values) {\n  let current = values[0];\n  let best = values[0];\n  let currentStart = 0;\n  let bestStart = 0;\n  let bestEnd = 1;\n\n  for (let index = 1; index < values.length; index++) {\n    if (current < 0) {\n      current = values[index];\n      currentStart = index;\n    } else {\n      current += values[index];\n    }\n\n    if (current > best) {\n      best = current;\n      bestStart = currentStart;\n      bestEnd = index + 1;\n    }\n  }\n\n  return best;\n}\n\nconsole.log(maximumSubarray(numbers));"
+    "code": "// Input\n// Nonempty numeric array. Returns the maximum contiguous sum.\nconst numbers = [-2, 1, -3, 4, -1, 2, 1, -5, 4];\n\n// Algorithm\nfunction maximumSubarray(values) {\n  let current = values[0];\n  let best = values[0];\n  let currentStart = 0;\n  let bestStart = 0;\n  let bestEnd = 1;\n\n  for (let index = 1; index < values.length; index++) {\n    if (current < 0) {\n      current = values[index];\n      currentStart = index;\n    } else {\n      current += values[index];\n    }\n\n    if (current > best) {\n      best = current;\n      bestStart = currentStart;\n      bestEnd = index + 1;\n    }\n  }\n\n  return best;\n}\n\n// Run\nconst answer = maximumSubarray(numbers);"
   },
   {
     "id": "topological-sort",
@@ -61,7 +61,7 @@
     "category": "Graph",
     "structure": "graph",
     "description": "Produce a deterministic dependency order by processing zero-indegree vertices.",
-    "code": "const network = { A: ['B', 'C'], B: ['D'], C: ['D'], D: [], E: [] };\nfunction sort(graph) {\n  const indegree = {};\n  for (const node of Object.keys(graph)) {\n    indegree[node] = 0;\n  }\n  for (const node of Object.keys(graph)) {\n    for (const neighbor of graph[node]) {\n      indegree[neighbor]++;\n    }\n  }\n  const queue = [];\n  for (const node of Object.keys(graph)) {\n    if (indegree[node] === 0) {\n      queue.push(node);\n    }\n  }\n  const order = [];\n  while (queue.length > 0) {\n    const node = queue.shift();\n    order.push(node);\n    for (const neighbor of graph[node]) {\n      indegree[neighbor]--;\n      if (indegree[neighbor] === 0) {\n        queue.push(neighbor);\n      }\n    }\n  }\n  return order.length === Object.keys(graph).length ? order : null;\n}\nconst answer = sort(network);"
+    "code": "// Input\n// Adjacency list with every vertex defined. Returns an ordering, or null for a cycle.\nconst network = { A: ['B', 'C'], B: ['D'], C: ['D'], D: [], E: [] };\n\n// Algorithm\nfunction topologicalSort(graph) {\n  const indegree = {};\n  for (const node of Object.keys(graph)) {\n    indegree[node] = 0;\n  }\n  for (const node of Object.keys(graph)) {\n    for (const neighbor of graph[node]) {\n      indegree[neighbor]++;\n    }\n  }\n  const queue = [];\n  for (const node of Object.keys(graph)) {\n    if (indegree[node] === 0) {\n      queue.push(node);\n    }\n  }\n  const order = [];\n  while (queue.length > 0) {\n    const node = queue.shift();\n    order.push(node);\n    for (const neighbor of graph[node]) {\n      indegree[neighbor]--;\n      if (indegree[neighbor] === 0) {\n        queue.push(neighbor);\n      }\n    }\n  }\n  return order.length === Object.keys(graph).length ? order : null;\n}\n\n// Run\nconst answer = topologicalSort(network);"
   },
   {
     "id": "cycle-detection",
@@ -69,7 +69,7 @@
     "category": "Linked List",
     "structure": "linked-list",
     "description": "Find the entry to an already-cyclic list with independent slow and fast pointers.",
-    "code": "const list = { value: 1, next: { value: 2, next: { value: 3, next: { value: 4, next: null } } } };\nlist.next.next.next.next = list.next;\nfunction findEntry(head) {\n  let slow = head;\n  let fast = head;\n  while (fast !== null && fast.next !== null) {\n    slow = slow.next;\n    fast = fast.next.next;\n    if (slow === fast) {\n      slow = head;\n      while (slow !== fast) {\n        slow = slow.next;\n        fast = fast.next;\n      }\n      return slow;\n    }\n  }\n  return null;\n}\nconst answer = findEntry(list);"
+    "code": "// Input\n// Linked list with null or cyclic links. Returns the cycle entry node, or null.\nconst list = {\n  value: 1,\n  next: { value: 2, next: { value: 3, next: { value: 4, next: null } } },\n};\nlist.next.next.next.next = list.next;\n\n// Algorithm\nfunction findCycleEntry(head) {\n  let slow = head;\n  let fast = head;\n  while (fast !== null && fast.next !== null) {\n    slow = slow.next;\n    fast = fast.next.next;\n    if (slow === fast) {\n      slow = head;\n      while (slow !== fast) {\n        slow = slow.next;\n        fast = fast.next;\n      }\n      return slow;\n    }\n  }\n  return null;\n}\n\n// Run\nconst answer = findCycleEntry(list);"
   },
   {
     "id": "lowest-common-ancestor",
@@ -77,31 +77,31 @@
     "category": "Tree",
     "structure": "tree",
     "description": "Find the shared ancestor of two existing tree nodes through recursive returns.",
-    "code": "const T = { value: 4, left: { value: 2, left: { value: 1, left: null, right: null }, right: { value: 3, left: null, right: null } }, right: { value: 6, left: { value: 5, left: null, right: null }, right: { value: 7, left: null, right: null } } };\nconst first = T.left.left;\nconst second = T.left.right;\nfunction ancestor(node, p, q) {\n  if (node === null) return null;\n  if (node === p || node === q) return node;\n  const left = ancestor(node.left, p, q);\n  const right = ancestor(node.right, p, q);\n  if (left !== null && right !== null) return node;\n  return left !== null ? left : right;\n}\nconst answer = ancestor(T, first, second);"
+    "code": "// Input\n// Both target nodes exist in the tree. Returns their lowest common ancestor node.\nconst T = {\n  value: 4,\n  left: {\n    value: 2,\n    left: { value: 1, left: null, right: null },\n    right: { value: 3, left: null, right: null },\n  },\n  right: {\n    value: 6,\n    left: { value: 5, left: null, right: null },\n    right: { value: 7, left: null, right: null },\n  },\n};\nconst first = T.left.left;\nconst second = T.left.right;\n\n// Algorithm\nfunction lowestCommonAncestor(node, p, q) {\n  if (node === null) return null;\n  if (node === p || node === q) return node;\n  const left = lowestCommonAncestor(node.left, p, q);\n  const right = lowestCommonAncestor(node.right, p, q);\n  if (left !== null && right !== null) return node;\n  return left !== null ? left : right;\n}\n\n// Run\nconst answer = lowestCommonAncestor(T, first, second);"
   },
   {
     "id": "dijkstra-shortest-path",
     "name": "Dijkstra's Shortest Path",
     "category": "Graph",
     "structure": "graph",
-    "description": "Find shortest paths in a complete weighted graph through distance relaxation.",
-    "code": "const network = {\n  A: [{ to: 'B', weight: 4 }, { to: 'C', weight: 1 }],\n  B: [{ to: 'D', weight: 1 }],\n  C: [{ to: 'B', weight: 2 }, { to: 'D', weight: 5 }],\n  D: [],\n  E: [],\n};\nfunction shortestPaths(graph, start) {\n  const distances = {};\n  const predecessors = {};\n  const settled = new Set();\n  for (const node of Object.keys(graph)) {\n    distances[node] = Infinity;\n  }\n  distances[start] = 0;\n  while (true) {\n    let current = null;\n    for (const node of Object.keys(graph)) {\n      if (!settled.has(node) && Number.isFinite(distances[node]) &&\n          (current === null || distances[node] < distances[current])) {\n        current = node;\n      }\n    }\n    if (current === null) break;\n    settled.add(current);\n    for (const edge of graph[current]) {\n      const candidate = distances[current] + edge.weight;\n      if (candidate < distances[edge.to]) {\n        distances[edge.to] = candidate;\n        predecessors[edge.to] = current;\n      }\n    }\n  }\n  return distances;\n}\nconst answer = shortestPaths(network, 'A');"
+    "description": "Find shortest distances in a graph with nonnegative edge weights through distance relaxation.",
+    "code": "// Input\n// Nonnegative edge weights; every vertex is defined. Returns distances; unreachable vertices remain Infinity.\nconst network = {\n  A: [\n    { to: 'B', weight: 4 },\n    { to: 'C', weight: 1 },\n  ],\n  B: [{ to: 'D', weight: 1 }],\n  C: [\n    { to: 'B', weight: 2 },\n    { to: 'D', weight: 5 },\n  ],\n  D: [],\n  E: [],\n};\n\n// Algorithm\nfunction dijkstra(graph, start) {\n  const distances = {};\n  const predecessors = {};\n  const settled = new Set();\n  for (const node of Object.keys(graph)) {\n    distances[node] = Infinity;\n  }\n  distances[start] = 0;\n  while (true) {\n    let current = null;\n    for (const node of Object.keys(graph)) {\n      if (\n        !settled.has(node) &&\n        Number.isFinite(distances[node]) &&\n        (current === null || distances[node] < distances[current])\n      ) {\n        current = node;\n      }\n    }\n    if (current === null) break;\n    settled.add(current);\n    for (const edge of graph[current]) {\n      const candidate = distances[current] + edge.weight;\n      if (candidate < distances[edge.to]) {\n        distances[edge.to] = candidate;\n        predecessors[edge.to] = current;\n      }\n    }\n  }\n  return distances;\n}\n\n// Run\nconst answer = dijkstra(network, 'A');"
   },
   {
     "id": "longest-increasing-subsequence",
     "name": "Longest Increasing Subsequence",
     "category": "Array",
     "structure": "array",
-    "description": "Compare earlier values and keep the best increasing length without changing input bars.",
-    "code": "const values = [10, 9, 2, 5, 3, 7, 101, 18];\nfunction increasing(input) {\n  if (input.length === 0) return 0;\n  const lengths = Array(input.length).fill(1);\n  let best = 1;\n  for (let i = 1; i < input.length; i++) {\n    for (let j = 0; j < i; j++) {\n      if (input[j] < input[i]) {\n        lengths[i] = Math.max(lengths[i], lengths[j] + 1);\n      }\n    }\n    best = Math.max(best, lengths[i]);\n  }\n  return best;\n}\nconst answer = increasing(values);"
+    "description": "Compute the longest strictly increasing subsequence length and highlight one matching subsequence.",
+    "code": "// Input\n// Numeric array. Returns the strictly increasing subsequence length.\nconst values = [10, 9, 2, 5, 3, 7, 101, 18];\n\n// Algorithm\nfunction longestIncreasingSubsequence(input) {\n  if (input.length === 0) return 0;\n  const lengths = Array(input.length).fill(1);\n  let best = 1;\n  for (let i = 1; i < input.length; i++) {\n    for (let j = 0; j < i; j++) {\n      if (input[j] < input[i]) {\n        lengths[i] = Math.max(lengths[i], lengths[j] + 1);\n      }\n    }\n    best = Math.max(best, lengths[i]);\n  }\n  return best;\n}\n\n// Run\nconst answer = longestIncreasingSubsequence(values);"
   },
   {
     "id": "longest-common-subsequence",
     "name": "Longest Common Subsequence",
     "category": "Matrix",
     "structure": "matrix",
-    "description": "Compare two strings through a single dependency-aware dynamic-programming table.",
-    "code": "const first = 'ABCBDAB';\nconst second = 'BDCABA';\nfunction lcs(a, b) {\n  const table = Array.from({ length: a.length + 1 }, () => Array(b.length + 1).fill(0));\n  for (let row = 0; row <= a.length; row++) {\n    table[row][0] = 0;\n  }\n  for (let column = 0; column <= b.length; column++) {\n    table[0][column] = 0;\n  }\n  for (let row = 1; row <= a.length; row++) {\n    for (let column = 1; column <= b.length; column++) {\n      if (a[row - 1] === b[column - 1]) {\n        table[row][column] = table[row - 1][column - 1] + 1;\n      } else {\n        table[row][column] = Math.max(table[row - 1][column], table[row][column - 1]);\n      }\n    }\n  }\n  return table[a.length][b.length];\n}\nconst answer = lcs(first, second);"
+    "description": "Compute the longest common subsequence length using a dependency-aware table.",
+    "code": "// Input\n// Two strings. Returns their longest common subsequence length.\nconst first = 'ABCBDAB';\nconst second = 'BDCABA';\n\n// Algorithm\nfunction longestCommonSubsequence(a, b) {\n  const table = Array.from({ length: a.length + 1 }, () =>\n    Array(b.length + 1).fill(0),\n  );\n  for (let row = 1; row <= a.length; row++) {\n    for (let column = 1; column <= b.length; column++) {\n      if (a[row - 1] === b[column - 1]) {\n        table[row][column] = table[row - 1][column - 1] + 1;\n      } else {\n        table[row][column] = Math.max(\n          table[row - 1][column],\n          table[row][column - 1],\n        );\n      }\n    }\n  }\n  return table[a.length][b.length];\n}\n\n// Run\nconst answer = longestCommonSubsequence(first, second);"
   },
   {
     "id": "spiral-matrix",
@@ -109,7 +109,7 @@
     "category": "Matrix",
     "structure": "matrix",
     "description": "Traverse a rectangular grid clockwise by shrinking its four boundaries.",
-    "code": "const grid = [[1,2,3,4],[5,6,7,8],[9,10,11,12]];\nfunction spiral(matrix) {\n  const result = [];\n  let top = 0;\n  let bottom = matrix.length - 1;\n  let left = 0;\n  let right = matrix[0].length - 1;\n  while (top <= bottom && left <= right) {\n    for (let column = left; column <= right; column++) {\n      result.push(matrix[top][column]);\n    }\n    top++;\n    for (let row = top; row <= bottom; row++) {\n      result.push(matrix[row][right]);\n    }\n    right--;\n    if (top <= bottom) {\n      for (let column = right; column >= left; column--) {\n        result.push(matrix[bottom][column]);\n      }\n      bottom--;\n    }\n    if (left <= right) {\n      for (let row = bottom; row >= top; row--) {\n        result.push(matrix[row][left]);\n      }\n      left++;\n    }\n  }\n  return result;\n}\nconst answer = spiral(grid);"
+    "code": "// Input\n// Nonempty rectangular matrix. Returns values in clockwise spiral order.\nconst grid = [\n  [1, 2, 3, 4],\n  [5, 6, 7, 8],\n  [9, 10, 11, 12],\n];\n\n// Algorithm\nfunction spiralOrder(matrix) {\n  const result = [];\n  let top = 0;\n  let bottom = matrix.length - 1;\n  let left = 0;\n  let right = matrix[0].length - 1;\n  while (top <= bottom && left <= right) {\n    for (let column = left; column <= right; column++) {\n      result.push(matrix[top][column]);\n    }\n    top++;\n    for (let row = top; row <= bottom; row++) {\n      result.push(matrix[row][right]);\n    }\n    right--;\n    if (top <= bottom) {\n      for (let column = right; column >= left; column--) {\n        result.push(matrix[bottom][column]);\n      }\n      bottom--;\n    }\n    if (left <= right) {\n      for (let row = bottom; row >= top; row--) {\n        result.push(matrix[row][left]);\n      }\n      left++;\n    }\n  }\n  return result;\n}\n\n// Run\nconst answer = spiralOrder(grid);"
   },
   {
     "id": "rotate-image",
@@ -117,15 +117,15 @@
     "category": "Matrix",
     "structure": "matrix",
     "description": "Rotate a square matrix clockwise in place by transposing it and reversing each row.",
-    "code": "const grid = [[1,2,3],[4,5,6],[7,8,9]];\nfunction rotate(matrix) {\n  for (let row = 0; row < matrix.length; row++) {\n    for (let column = row + 1; column < matrix.length; column++) {\n      const saved = matrix[row][column];\n      matrix[row][column] = matrix[column][row];\n      matrix[column][row] = saved;\n    }\n  }\n  for (let row = 0; row < matrix.length; row++) {\n    for (let left = 0, right = matrix.length - 1; left < right; left++, right--) {\n      const saved = matrix[row][left];\n      matrix[row][left] = matrix[row][right];\n      matrix[row][right] = saved;\n    }\n  }\n  return matrix;\n}\nconst answer = rotate(grid);"
+    "code": "// Input\n// Square matrix. Mutates and returns the matrix rotated clockwise.\nconst grid = [\n  [1, 2, 3],\n  [4, 5, 6],\n  [7, 8, 9],\n];\n\n// Algorithm\nfunction rotateImage(matrix) {\n  for (let row = 0; row < matrix.length; row++) {\n    for (let column = row + 1; column < matrix.length; column++) {\n      const saved = matrix[row][column];\n      matrix[row][column] = matrix[column][row];\n      matrix[column][row] = saved;\n    }\n  }\n  for (let row = 0; row < matrix.length; row++) {\n    for (\n      let left = 0, right = matrix.length - 1;\n      left < right;\n      left++, right--\n    ) {\n      const saved = matrix[row][left];\n      matrix[row][left] = matrix[row][right];\n      matrix[row][right] = saved;\n    }\n  }\n  return matrix;\n}\n\n// Run\nconst answer = rotateImage(grid);"
   },
   {
     "id": "sum-of-subsets",
     "name": "Sum of Subsets",
     "category": "Array",
     "structure": "array",
-    "description": "Search include and exclude branches, explicitly undoing failed choices.",
-    "code": "const values = [3, 4, 5];\nconst target = 9;\nfunction subset(input, goal) {\n  const selected = [];\n  function search(index, sum) {\n    if (sum === goal) return true;\n    if (index === input.length || sum > goal) return false;\n    selected.push(index);\n    if (search(index + 1, sum + input[index])) return true;\n    selected.pop();\n    return search(index + 1, sum);\n  }\n  return search(0, 0) ? selected.slice() : null;\n}\nconst answer = subset(values, target);"
+    "description": "Search include and exclude branches for nonnegative values; return selected indices or null.",
+    "code": "// Input\n// Nonnegative values and target. Returns selected indices, or null.\nconst values = [3, 4, 5];\nconst target = 9;\n\n// Algorithm\nfunction sumOfSubsets(input, goal) {\n  const selected = [];\n  function search(index, sum) {\n    if (sum === goal) return true;\n    if (index === input.length || sum > goal) return false;\n    selected.push(index);\n    if (search(index + 1, sum + input[index])) return true;\n    selected.pop();\n    return search(index + 1, sum);\n  }\n  return search(0, 0) ? selected.slice() : null;\n}\n\n// Run\nconst answer = sumOfSubsets(values, target);"
   },
   {
     "id": "n-queens",
@@ -133,7 +133,7 @@
     "category": "Matrix",
     "structure": "matrix",
     "description": "Place queens on a complete board and explicitly undo conflicting choices.",
-    "code": "const board = [[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]];\nfunction canPlace(row, col) {\n  for (let prior = 0; prior < col; prior++) {\n    for (let other = 0; other < board.length; other++) {\n      if (board[other][prior] === 1 && (other === row || Math.abs(other - row) === col - prior)) return false;\n    }\n  }\n  return true;\n}\nfunction solve(col) {\n  if (col === board.length) return true;\n  for (let row = 0; row < board.length; row++) {\n    if (!canPlace(row, col)) continue;\n    board[row][col] = 1;\n    if (solve(col + 1)) return true;\n    board[row][col] = 0;\n  }\n  return false;\n}\nconst answer = solve(0);"
+    "code": "// Input\n// Square zero-filled board. Mutates the board; returns whether one solution was found.\nconst board = [\n  [0, 0, 0, 0],\n  [0, 0, 0, 0],\n  [0, 0, 0, 0],\n  [0, 0, 0, 0],\n];\n\n// Algorithm\nfunction canPlace(row, col) {\n  for (let prior = 0; prior < col; prior++) {\n    for (let other = 0; other < board.length; other++) {\n      if (\n        board[other][prior] === 1 &&\n        (other === row || Math.abs(other - row) === col - prior)\n      )\n        return false;\n    }\n  }\n  return true;\n}\nfunction solve(col) {\n  if (col === board.length) return true;\n  for (let row = 0; row < board.length; row++) {\n    if (!canPlace(row, col)) continue;\n    board[row][col] = 1;\n    if (solve(col + 1)) return true;\n    board[row][col] = 0;\n  }\n  return false;\n}\n\n// Run\nconst answer = solve(0);"
   },
   {
     "id": "merge-sort",
@@ -141,7 +141,7 @@
     "category": "Array",
     "structure": "array",
     "description": "Recursively split the complete array and merge sorted values back into place.",
-    "code": "const data = [4, 2, 4, 1, 3];\nfunction sort(items, low, high) {\n  if (high - low <= 1) return items;\n  const middle = Math.floor((low + high) / 2);\n  sort(items, low, middle);\n  sort(items, middle, high);\n  const left = items.slice(low, middle);\n  const right = items.slice(middle, high);\n  let i = 0;\n  let j = 0;\n  let k = low;\n  while (i < left.length && j < right.length) {\n    if (left[i] <= right[j]) {\n      items[k] = left[i];\n      i++;\n    } else {\n      items[k] = right[j];\n      j++;\n    }\n    k++;\n  }\n  while (i < left.length) {\n    items[k] = left[i];\n    i++;\n    k++;\n  }\n  while (j < right.length) {\n    items[k] = right[j];\n    j++;\n    k++;\n  }\n  return items;\n}\nconst answer = sort(data, 0, data.length);"
+    "code": "// Input\n// Numeric array. Sorts in place using [low, high) bounds; returns the array.\nconst data = [4, 2, 4, 1, 3];\n\n// Algorithm\nfunction mergeSort(items, low, high) {\n  if (high - low <= 1) return items;\n  const middle = Math.floor((low + high) / 2);\n  mergeSort(items, low, middle);\n  mergeSort(items, middle, high);\n  const left = items.slice(low, middle);\n  const right = items.slice(middle, high);\n  let i = 0;\n  let j = 0;\n  let k = low;\n  while (i < left.length && j < right.length) {\n    if (left[i] <= right[j]) {\n      items[k] = left[i];\n      i++;\n    } else {\n      items[k] = right[j];\n      j++;\n    }\n    k++;\n  }\n  while (i < left.length) {\n    items[k] = left[i];\n    i++;\n    k++;\n  }\n  while (j < right.length) {\n    items[k] = right[j];\n    j++;\n    k++;\n  }\n  return items;\n}\n\n// Run\nconst answer = mergeSort(data, 0, data.length);"
   },
   {
     "id": "quick-sort",
@@ -149,7 +149,7 @@
     "category": "Array",
     "structure": "array",
     "description": "Partition the complete array around pivots with stable bar identity through swaps.",
-    "code": "const values = [4, 2, 4, 1, 3];\nfunction quick(items, low, high) {\n  if (low >= high) return items;\n  const pivot = items[high];\n  let boundary = low;\n  for (let scan = low; scan < high; scan++) {\n    if (items[scan] < pivot) {\n      [items[boundary], items[scan]] = [items[scan], items[boundary]];\n      boundary++;\n    }\n  }\n  [items[boundary], items[high]] = [items[high], items[boundary]];\n  quick(items, low, boundary - 1);\n  quick(items, boundary + 1, high);\n  return items;\n}\nconst answer = quick(values, 0, values.length - 1);"
+    "code": "// Input\n// Numeric array. Sorts in place using inclusive low/high bounds; returns the array.\nconst values = [4, 2, 4, 1, 3];\n\n// Algorithm\nfunction quickSort(items, low, high) {\n  if (low >= high) return items;\n  const pivot = items[high];\n  let boundary = low;\n  for (let scan = low; scan < high; scan++) {\n    if (items[scan] < pivot) {\n      [items[boundary], items[scan]] = [items[scan], items[boundary]];\n      boundary++;\n    }\n  }\n  [items[boundary], items[high]] = [items[high], items[boundary]];\n  quickSort(items, low, boundary - 1);\n  quickSort(items, boundary + 1, high);\n  return items;\n}\n\n// Run\nconst answer = quickSort(values, 0, values.length - 1);"
   },
   {
     "id": "boyer-moore-majority-vote",
@@ -157,6 +157,6 @@
     "category": "Array",
     "structure": "array",
     "description": "Select a candidate with balanced votes, then verify its majority.",
-    "code": "const numbers = [2, 2, 1, 1, 1, 2, 2];\nfunction majorityVote(items) {\n  let candidate = null;\n  let count = 0;\n  for (let index = 0; index < items.length; index++) {\n    if (count === 0) {\n      candidate = items[index];\n    }\n    if (items[index] === candidate) {\n      count += 1;\n    } else {\n      count -= 1;\n    }\n  }\n  let verified = 0;\n  for (let cursor = 0; cursor < items.length; cursor++) {\n    if (items[cursor] === candidate) {\n      verified += 1;\n    }\n  }\n  return verified > items.length / 2 ? candidate : null;\n}\nconst answer = majorityVote(numbers);"
+    "code": "// Input\n// Returns the verified majority value, or null if none exists.\nconst numbers = [2, 2, 1, 1, 1, 2, 2];\n\n// Algorithm\nfunction majorityVote(items) {\n  let candidate = null;\n  let count = 0;\n  for (let index = 0; index < items.length; index++) {\n    if (count === 0) {\n      candidate = items[index];\n    }\n    if (items[index] === candidate) {\n      count += 1;\n    } else {\n      count -= 1;\n    }\n  }\n  let verified = 0;\n  for (let cursor = 0; cursor < items.length; cursor++) {\n    if (items[cursor] === candidate) {\n      verified += 1;\n    }\n  }\n  return verified > items.length / 2 ? candidate : null;\n}\n\n// Run\nconst answer = majorityVote(numbers);"
   }
 ]

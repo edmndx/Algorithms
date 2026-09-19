@@ -149,6 +149,16 @@ export const renderGraph: D3RenderFunction<GraphSceneState> = (
     .attr('class', 'visualization-edge visualization-graph-edge')
     .classed('visualization-visited-edge', (edge) => edge.isVisited)
     .classed('visualization-marked-edge', (edge) => edge.isMarked)
+    .classed(
+      'visualization-path-edge',
+      (edge) => pathEdgeIds.has(edge.id) || predecessorEdgeIds.has(edge.id),
+    )
+    .classed(
+      'visualization-current-edge',
+      (edge) =>
+        scene.currentEdgeId === edge.id ||
+        (scene.edgeMarkers.current ?? []).includes(edge.id),
+    )
     .attr('marker-end', (edge) =>
       edge.edge.directed === true ? 'url(#graph-arrowhead)' : null,
     );
@@ -196,7 +206,20 @@ export const renderGraph: D3RenderFunction<GraphSceneState> = (
     .attr('data-node-id', (node) => node.id)
     .style('opacity', 1)
     .classed('visualization-visited', (node) => node.isVisited)
-    .classed('visualization-marked', (node) => node.isMarked);
+    .classed('visualization-marked', (node) => node.isMarked)
+    .classed(
+      'visualization-frontier',
+      (node) =>
+        scene.frontier.includes(node.id) ||
+        (discoveredNodeIds.has(node.id) && !visitedNodeIds.has(node.id)),
+    )
+    .classed('visualization-path', (node) => pathNodeIds.has(node.id))
+    .classed(
+      'visualization-current',
+      (node) =>
+        scene.currentNodeId === node.id ||
+        (scene.nodeMarkers.current ?? []).includes(node.id),
+    );
   if (context?.animate)
     nodeGroups
       .transition()
@@ -220,12 +243,13 @@ export const renderGraph: D3RenderFunction<GraphSceneState> = (
     .select<SVGTextElement>('text.visualization-distance')
     .selectAll<SVGTSpanElement, string>('tspan')
     .data((node) => {
+      // Distance first, then metrics alphabetically; names belong in the console.
       const distance = scene.distances[node.id];
       return [
-        ...(distance === undefined ? [] : [`distance: ${distance ?? '∞'}`]),
-        ...Object.entries(scene.nodeMetrics[node.id] ?? {}).map(
-          ([name, value]) => `${name}: ${value}`,
-        ),
+        ...(distance === undefined ? [] : [String(distance ?? '∞')]),
+        ...Object.entries(scene.nodeMetrics[node.id] ?? {})
+          .sort(([left], [right]) => (left < right ? -1 : left > right ? 1 : 0))
+          .map(([, value]) => String(value)),
       ];
     })
     .join('tspan')

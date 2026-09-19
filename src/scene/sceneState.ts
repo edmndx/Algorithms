@@ -18,10 +18,14 @@ import type {
 /* -------------------------------------------------------------------------- */
 
 type SceneStateBase = {
+  readonly workingValues?: Readonly<
+    Record<string, number | boolean | string | null | readonly unknown[]>
+  >;
   readonly scopeStack: readonly {
     readonly id: number;
     readonly target: string | null;
     readonly callerFocus?: ArraySceneState['focus'];
+    readonly callerWorkingValues?: SceneStateBase['workingValues'];
   }[];
   readonly isPlaceholder?: true;
 };

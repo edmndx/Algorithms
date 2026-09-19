@@ -149,61 +149,61 @@ export function instrumentLcsFrames(
       TRACE_LIMITS.matrixCells
   )
     return null;
-  const [gridStatement, baseRow, baseColumn, outerStatement, result] =
-    fn.body.body;
+  const legacyInitialization = fn.body.body.length === 5;
+  const [gridStatement] = fn.body.body;
+  const outerStatement = fn.body.body.at(-2);
+  const result = fn.body.body.at(-1);
   const gridEntry = declaration(gridStatement);
   if (
-    fn.body.body.length !== 5 ||
+    (!legacyInitialization && fn.body.body.length !== 3) ||
     !gridEntry ||
     !allocation(gridEntry.init, a, b, true) ||
-    baseRow?.type !== 'ForStatement' ||
-    baseColumn?.type !== 'ForStatement' ||
     outerStatement?.type !== 'ForStatement' ||
     result?.type !== 'ReturnStatement'
   )
     return null;
   const grid = gridEntry.id.name;
-  const rowBase = loop(baseRow, 0, a),
-    columnBase = loop(baseColumn, 0, b);
   const outer = loop(outerStatement, 1, a);
-  if (
-    !rowBase ||
-    !columnBase ||
-    !outer ||
-    outer.body.length !== 1 ||
-    new Set([grid, rowBase.name, columnBase.name, a, b]).size !== 5 ||
-    outer.name !== rowBase.name
-  )
-    return null;
-  const innerStatement = outer.body[0];
-  const inner = loop(innerStatement, 1, b);
+  if (!outer || outer.body.length !== 1) return null;
+  const inner = loop(outer.body[0], 1, b);
   if (
     !inner ||
     inner.body.length !== 1 ||
-    inner.name !== columnBase.name ||
-    rowBase.body.length !== 1 ||
-    columnBase.body.length !== 1
+    new Set([grid, outer.name, inner.name, a, b]).size !== 5
   )
     return null;
-  const rowWrite = matrixWrite(
-    rowBase.body[0],
-    grid,
-    (node) => named(node, rowBase.name),
-    (node) => literal(node, 0),
-  );
-  const columnWrite = matrixWrite(
-    columnBase.body[0],
-    grid,
-    (node) => literal(node, 0),
-    (node) => named(node, columnBase.name),
-  );
-  if (
-    !rowWrite ||
-    !columnWrite ||
-    !literal(rowWrite.assignment.right, 0) ||
-    !literal(columnWrite.assignment.right, 0)
-  )
-    return null;
+  const rowBase = legacyInitialization ? loop(fn.body.body[1], 0, a) : null;
+  const columnBase = legacyInitialization ? loop(fn.body.body[2], 0, b) : null;
+  if (legacyInitialization) {
+    if (
+      !rowBase ||
+      !columnBase ||
+      rowBase.body.length !== 1 ||
+      columnBase.body.length !== 1 ||
+      rowBase.name !== outer.name ||
+      columnBase.name !== inner.name
+    )
+      return null;
+    const rowWrite = matrixWrite(
+      rowBase.body[0],
+      grid,
+      (node) => named(node, rowBase.name),
+      (node) => literal(node, 0),
+    );
+    const columnWrite = matrixWrite(
+      columnBase.body[0],
+      grid,
+      (node) => literal(node, 0),
+      (node) => named(node, columnBase.name),
+    );
+    if (
+      !rowWrite ||
+      !columnWrite ||
+      !literal(rowWrite.assignment.right, 0) ||
+      !literal(columnWrite.assignment.right, 0)
+    )
+      return null;
+  }
   const branch = inner.body[0];
   if (
     branch?.type !== 'IfStatement' ||
@@ -254,8 +254,8 @@ export function instrumentLcsFrames(
         grid,
         i,
         j,
-        rowBase.name,
-        columnBase.name,
+        outer.name,
+        inner.name,
       ].includes(name),
     )
   )
@@ -277,19 +277,32 @@ export function instrumentLcsFrames(
       gridStatement!,
       `\ntrace.initialize({ type: 'scene.init', structure: 'matrix' }, { type: 'matrix.create', values: ${grid}, rowLabels: ['', ...${a}.split('')], columnLabels: ['', ...${b}.split('')] });`,
     ),
-    before(rowBase.body[0]!, `const ${old} = ${grid}[${rowBase.name}][0];\n`),
-    at(
-      rowBase.body[0]!,
-      assignmentFrame(rowBase.body[0]!, rowBase.name, '0', old, '0'),
-    ),
-    before(
-      columnBase.body[0]!,
-      `const ${old} = ${grid}[0][${columnBase.name}];\n`,
-    ),
-    at(
-      columnBase.body[0]!,
-      assignmentFrame(columnBase.body[0]!, '0', columnBase.name, old, '0'),
-    ),
+    ...(rowBase && columnBase
+      ? [
+          before(
+            rowBase.body[0]!,
+            `const ${old} = ${grid}[${rowBase.name}][0];\n`,
+          ),
+          at(
+            rowBase.body[0]!,
+            assignmentFrame(rowBase.body[0]!, rowBase.name, '0', old, '0'),
+          ),
+          before(
+            columnBase.body[0]!,
+            `const ${old} = ${grid}[0][${columnBase.name}];\n`,
+          ),
+          at(
+            columnBase.body[0]!,
+            assignmentFrame(
+              columnBase.body[0]!,
+              '0',
+              columnBase.name,
+              old,
+              '0',
+            ),
+          ),
+        ]
+      : []),
     replace(
       branch.test,
       `trace.compareScalar(${a}[${i} - 1], ${b}[${j} - 1], 'eq', ${location(branch.test)}, ${JSON.stringify(a + '[i-1]')}, ${JSON.stringify(b + '[j-1]')}, [${mark('cur', i, j)}])`,

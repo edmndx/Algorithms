@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="en">
+  <meta charset="UTF-8" /><title>Visualization state checks</title>
+  <pre id="result">Running</pre>
+  <script type="module">
+    import '../../src/visualization/visualization.css';
+    import { createInitializedScene } from '../../src/scene/sceneState.ts';
+    import { renderMatrix } from '../../src/visualization/renderMatrix.ts';
+    import { renderArray } from '../../src/visualization/renderArray.ts';
+    import { renderLinkedList } from '../../src/visualization/renderLinkedList.ts';
+    import { renderGraph } from '../../src/visualization/renderGraph.ts';
+    import { renderTree } from '../../src/visualization/renderTree.ts';
+    import catalog from '../../src/data/catalog/algorithms.json';
+    import { instrumentSource } from '../../src/instrumentation/instrumentSource.ts';
+    import { runValidatedFrameCode } from '../../src/runner/runner.ts';
+    import { parseTraceFile } from '../../src/features/trace/traceSerialization.ts';
+    import { getFrameScene } from '../../src/playback/frameTimeline.ts';
+    const failures = [];
+    const check = (condition, message) => {
+      if (!condition) failures.push(message);
+    };
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    document.body.append(svg);
+    const array = {
+      ...createInitializedScene('array'),
+      values: [0, 2, -1],
+      itemIds: ['a', 'b', 'c'],
+      focus: {
+        index: 0,
+        pointers: { left: 0, middle: 0, right: 2 },
+        range: null,
+      },
+    };
+    renderArray(svg, array);
+    check(
+      Number(svg.querySelector('.visualization-bar').getAttribute('height')) >
+        0,
+      'Zero remains visible',
+    );
+    check(
+      svg.querySelectorAll('.visualization-pointer').length === 0,
+      'Array pointer names stay out of the visualization',
+    );
+    renderArray(svg, {
+      ...array,
+      focus: { index: null, pointers: {}, range: null },
+    });
+    check(
+      svg.querySelectorAll('.visualization-pointer').length === 0,
+      'Pointers clear on seek',
+    );
+    svg.replaceChildren();
+    renderLinkedList(svg, {
+      ...createInitializedScene('linked-list'),
+      headId: 'a',
+      nodes: [{ id: 'a', value: 1, nextId: 'a' }],
+      pointers: { slow: 'a', fast: 'a' },
+    });
+    check(
+      svg.querySelectorAll('.visualization-pointer').length === 0,
+      'Slow and fast names stay out of the visualization',
+    );
+    svg.replaceChildren();
+    renderGraph(svg, {
+      ...createInitializedScene('graph'),
+      nodes: [{ id: 'a' }, { id: 'b' }, { id: 'c' }],
+      edges: [
+        { id: 'ab', from: 'a', to: 'b', directed: true },
+        { id: 'bc', from: 'b', to: 'c', directed: true },
+      ],
+      frontier: ['b', 'c'],
+      currentNodeId: 'b',
+      currentEdgeId: 'bc',
+      predecessors: { b: 'a' },
+    });
+    check(
+      svg
+        .querySelector('[data-node-id="b"]')
+        .classList.contains('visualization-current'),
+      'Current node distinguished',
+    );
+    check(
+      svg
+        .querySelector('[data-node-id="c"]')
+        .classList.contains('visualization-frontier'),
+      'Frontier distinguished',
+    );
+    check(
+      svg
+        .querySelector('[data-edge-id="ab"]')
+        .classList.contains('visualization-path-edge'),
+      'Predecessor edge retained',
+    );
+    check(
+      svg
+        .querySelector('[data-edge-id="bc"]')
+        .classList.contains('visualization-current-edge'),
+      'Current edge distinguished',
+    );
+    svg.replaceChildren();
+    svg.style.setProperty('--accent-blue', 'rgb(0, 0, 255)');
+    svg.style.setProperty('--visualization-green', 'rgb(0, 128, 0)');
+    renderMatrix(svg, {
+      ...createInitializedScene('matrix'),
+      values: [[1]],
+      itemIds: [['a']],
+      visitedPositions: [{ row: 0, column: 0 }],
+      markers: { diag: [{ row: 0, column: 0 }] },
+    });
+    check(
+      getComputedStyle(svg.querySelector('.visualization-cell')).stroke ===
+        'rgb(0, 0, 255)',
+      'Visited dependencies keep their emphasis',
+    );
+    for (const [id, renderer, selector, count] of [
+      [
+        'sliding-window',
+        renderArray,
+        '.visualization-array-item.visualization-marked',
+        3,
+      ],
+      [
+        'maximum-subarray',
+        renderArray,
+        '.visualization-array-item.visualization-marked',
+        4,
+      ],
+      [
+        'lowest-common-ancestor',
+        renderTree,
+        '.visualization-tree-node.visualization-marked',
+        1,
+      ],
+      [
+        'longest-common-subsequence',
+        renderMatrix,
+        '.visualization-matrix-cell.visualization-matrix-cur',
+        1,
+      ],
+      [
+        'n-queens',
+        renderMatrix,
+        '.visualization-matrix-cell.visualization-matrix-cur',
+        4,
+      ],
+      ['merge-sort', renderArray, '.visualization-pointer', 0],
+      ['quick-sort', renderArray, '.visualization-pointer', 0],
+    ]) {
+      try {
+        const entry = catalog.find((e) => e.id === id);
+        const result = await runValidatedFrameCode(
+          instrumentSource(entry.code, entry.structure),
+          entry.code,
+          entry.structure,
+        );
+        if (!result.ok) throw new Error(JSON.stringify(result.error));
+        const imported = parseTraceFile(JSON.stringify(result.trace));
+        if (!imported.ok) throw new Error(imported.error.message);
+        const timeline = imported.timeline;
+        const final = getFrameScene(timeline, timeline.operationCount);
+        svg.replaceChildren();
+        renderer(svg, final);
+        check(
+          svg.querySelectorAll(selector).length === count,
+          id + ': final result emphasis',
+        );
+        const finalMarkup = svg.innerHTML;
+        renderer(svg, getFrameScene(timeline, 0));
+        renderer(svg, final);
+        check(
+          svg.innerHTML === finalMarkup,
+          id + ': result survives rewind/replay',
+        );
+      } catch (error) {
+        failures.push(id + ': ' + error.message);
+      }
+    }
+    for (const side of ['left', 'right']) {
+      svg.replaceChildren();
+      renderTree(svg, {
+        ...createInitializedScene('tree'),
+        rootId: 'root',
+        nodes: [
+          { id: 'root', value: 1, children: ['child'], childSide: side },
+          { id: 'child', value: 2, children: [] },
+        ],
+      });
+      const parent = svg.querySelector('[data-node-id="root"]').__data__;
+      const child = svg.querySelector('[data-node-id="child"]').__data__;
+      check(
+        side === 'left' ? child.x < parent.x : child.x > parent.x,
+        'Single ' + side + ' child position',
+      );
+      check(
+        svg.querySelectorAll('.visualization-tree-node').length === 2,
+        'Invisible tree slots stay invisible',
+      );
+    }
+    document.querySelector('#result').textContent = failures.length
+      ? 'FAIL: ' + failures.join('; ')
+      : 'PASS: no extra pointer text; zero values, seek and graph states';
+    document.title = failures.length ? 'FAIL' : 'PASS';
+  </script>
+</html>

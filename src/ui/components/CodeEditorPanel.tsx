@@ -77,6 +77,7 @@ export function CodeEditorPanel({
   } = editorTabs;
   const [renamingTabId, setRenamingTabId] = useState<string | null>(null);
   const [renameDraft, setRenameDraft] = useState('');
+  const [contentHeight, setContentHeight] = useState<number>();
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
   const decorationsRef = useRef<editor.IEditorDecorationsCollection | null>(
     null,
@@ -84,6 +85,9 @@ export function CodeEditorPanel({
   const modelChangeRef = useRef<import('monaco-editor').IDisposable | null>(
     null,
   );
+  const contentSizeChangeRef = useRef<
+    import('monaco-editor').IDisposable | null
+  >(null);
   const activeSourceLine = activeSourceLocation?.line ?? null;
   const activeSourceLineRef = useRef(activeSourceLine);
 
@@ -99,6 +103,7 @@ export function CodeEditorPanel({
   useEffect(
     () => () => {
       modelChangeRef.current?.dispose();
+      contentSizeChangeRef.current?.dispose();
       decorationsRef.current?.clear();
       decorationsRef.current = null;
       editorRef.current = null;
@@ -193,7 +198,10 @@ export function CodeEditorPanel({
         ) : null}
       </div>
 
-      <div className="code-editor-panel-editor">
+      <div
+        className="code-editor-panel-editor"
+        style={{ height: contentHeight ?? '100%' }}
+      >
         <Editor
           path={`${activeTabId}.js`}
           height="100%"
@@ -207,11 +215,18 @@ export function CodeEditorPanel({
           onChange={(value) => updateActiveCode(value ?? '')}
           onMount={(editorInstance) => {
             modelChangeRef.current?.dispose();
+            contentSizeChangeRef.current?.dispose();
             decorationsRef.current?.clear();
             editorRef.current = editorInstance;
+            contentSizeChangeRef.current =
+              editorInstance.onDidContentSizeChange((event) =>
+                setContentHeight(event.contentHeight),
+              );
+            setContentHeight(editorInstance.getContentHeight());
             decorationsRef.current =
               editorInstance.createDecorationsCollection();
             modelChangeRef.current = editorInstance.onDidChangeModel(() => {
+              setContentHeight(editorInstance.getContentHeight());
               const decorations = decorationsRef.current;
               if (decorations !== null)
                 updatePlaybackDecoration(

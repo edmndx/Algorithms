@@ -118,7 +118,13 @@ export const renderTree: D3RenderFunction<TreeSceneState> = (
     .classed('visualization-compared', (node) => node.isCompared)
     .classed('visualization-visited', (node) => node.isVisited)
     .classed('visualization-root', (node) => node.isRoot)
-    .classed('visualization-marked', (node) => node.isMarked);
+    .classed('visualization-marked', (node) => node.isMarked)
+    .classed('visualization-path', (node) => pathNodeIds.has(node.id))
+    .classed(
+      'visualization-current',
+      (node) =>
+        scene.currentNodeId === node.id || activePath.at(-1) === node.id,
+    );
 
   if (context?.animate)
     groups

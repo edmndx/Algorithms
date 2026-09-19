@@ -29,13 +29,17 @@ export function reduceTraceCommand(
         );
       return {
         ...scene,
+        ...(scene.structure === 'array' ? { workingValues: {} } : {}),
         scopeStack: [
           ...scene.scopeStack,
           {
             id: command.id,
             target: command.target,
             ...(scene.structure === 'array'
-              ? { callerFocus: scene.focus }
+              ? {
+                  callerFocus: scene.focus,
+                  callerWorkingValues: scene.workingValues ?? {},
+                }
               : {}),
           },
         ],
@@ -50,7 +54,12 @@ export function reduceTraceCommand(
         );
       const scopeStack = scene.scopeStack.slice(0, -1);
       return scene.structure === 'array' && current.callerFocus !== undefined
-        ? { ...scene, scopeStack, focus: current.callerFocus }
+        ? {
+            ...scene,
+            scopeStack,
+            focus: current.callerFocus,
+            workingValues: current.callerWorkingValues ?? {},
+          }
         : { ...scene, scopeStack };
     }
 
@@ -106,6 +115,42 @@ export function reduceTraceFrame(
   let scene = clearFrameEmphasis(previous);
   for (const command of frame.commands)
     scene = reduceTraceCommand(scene, command);
+  if (
+    scene.structure === 'array' &&
+    scene.scopeStack.length > 0 &&
+    frame.operation.type === 'assign'
+  ) {
+    const { target, value } = frame.operation;
+    const values = scene.workingValues ?? {};
+    const indexed =
+      /^([\p{ID_Start}$_][\p{ID_Continue}$\u200C\u200D]*)\[(\d+)\]$/u.exec(
+        target,
+      );
+    if (indexed && Array.isArray(values[indexed[1]!])) {
+      const items = [...(values[indexed[1]!] as readonly unknown[])];
+      const index = Number(indexed[2]);
+      if (index < items.length) {
+        items[index] = value;
+        scene = {
+          ...scene,
+          workingValues: { ...values, [indexed[1]!]: items },
+        };
+      }
+    } else if (
+      /^[\p{ID_Start}$_][\p{ID_Continue}$\u200C\u200D]*$/u.test(target) &&
+      (value === null || typeof value !== 'object' || Array.isArray(value))
+    ) {
+      scene = { ...scene, workingValues: { ...values, [target]: value } };
+    }
+  }
+  if (
+    scene.structure === 'array' &&
+    scene.scopeStack.length === 0 &&
+    frame.operation.type === 'return' &&
+    Array.isArray(frame.operation.value)
+  ) {
+    scene = { ...scene, workingValues: {} };
+  }
   return scene;
 }
 

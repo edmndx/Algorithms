@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="en">
+  <meta charset="UTF-8" />
+  <title>Graph metric regression checks</title>
+  <pre id="result">Running…</pre>
+  <script type="module">
+    import catalog from '../../src/data/catalog/algorithms.json';
+    import { instrumentSource } from '../../src/instrumentation/instrumentSource.ts';
+    import { runValidatedFrameCode } from '../../src/runner/runner.ts';
+    import { getFrameScene } from '../../src/playback/frameTimeline.ts';
+    import { parseTraceFile } from '../../src/features/trace/traceSerialization.ts';
+    import { renderGraph } from '../../src/visualization/renderGraph.ts';
+
+    const failures = [];
+    function equal(actual, expected, message) {
+      if (JSON.stringify(actual) !== JSON.stringify(expected))
+        throw new Error(
+          `${message}: expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`,
+        );
+    }
+    async function run(id, edit = (source) => source) {
+      const source = edit(catalog.find((entry) => entry.id === id).code);
+      const instrumented = instrumentSource(source, 'graph');
+      if (instrumented === null)
+        throw new Error(`${id}: instrumentation rejected`);
+      const result = await runValidatedFrameCode(instrumented, source, 'graph');
+      if (!result.ok) throw new Error(`${id}: ${JSON.stringify(result.error)}`);
+      const built = parseTraceFile(JSON.stringify(result.trace));
+      if (!built.ok) throw new Error(`${id}: ${built.error.message}`);
+      const timeline = built.timeline;
+      return {
+        timeline,
+        scene: getFrameScene(timeline, timeline.operationCount),
+      };
+    }
+    function labels(scene) {
+      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      renderGraph(svg, scene);
+      return Array.from(
+        svg.querySelectorAll('.visualization-graph-node'),
+        (node) => [
+          node.getAttribute('data-node-id'),
+          Array.from(
+            node.querySelectorAll('.visualization-distance tspan'),
+            (line) => line.textContent,
+          ).join(', '),
+        ],
+      );
+    }
+
+    for (const [name, check] of [
+      [
+        'BFS distances and unreachable nodes',
+        async () => {
+          const { timeline, scene } = await run('breadth-first-search');
+          equal(
+            ['A', 'B', 'C', 'D', 'E'].map((id) => scene.distances[id]),
+            [0, 1, 1, 2, null],
+            'hop distances',
+          );
+          equal(
+            labels(scene),
+            [
+              ['A', 'distance: 0'],
+              ['B', 'distance: 1'],
+              ['C', 'distance: 1'],
+              ['D', 'distance: 2'],
+              ['E', 'distance: ∞'],
+            ],
+            'distance labels',
+          );
+          equal(
+            getFrameScene(timeline, 0).distances,
+            {},
+            'no distances before traversal starts',
+          );
+          for (let step = 1; step <= timeline.operationCount; step++) {
+            const current = getFrameScene(timeline, step);
+            for (const [id, distance] of Object.entries(current.distances)) {
+              if (distance !== null && !current.discoveredNodeIds.includes(id))
+                throw new Error(`distance shown before discovering ${id}`);
+            }
+          }
+        },
+      ],
+      [
+        'BFS cycles, a different start and helper-name collisions',
+        async () => {
+          const { scene } = await run(
+            'breadth-first-search',
+            (source) =>
+              `const __trace_distances0 = 99;\n${source.replace('D: []', "D: ['A']").replace("traverse(network, 'A')", "traverse(network, 'B')")}`,
+          );
+          equal(
+            ['A', 'B', 'C', 'D', 'E'].map((id) => scene.distances[id]),
+            [2, 0, 3, 1, null],
+            'distances from B through a cycle',
+          );
+        },
+      ],
+      [
+        'DFS discovery and finish timestamps',
+        async () => {
+          const { timeline, scene } = await run('depth-first-search');
+          equal(
+            ['A', 'B', 'C', 'D'].map((id) => scene.nodeMetrics[id]),
+            [
+              { discovery: 1, finish: 8 },
+              { discovery: 2, finish: 5 },
+              { discovery: 6, finish: 7 },
+              { discovery: 3, finish: 4 },
+            ],
+            'DFS timestamps',
+          );
+          equal(
+            scene.nodeMetrics.E,
+            undefined,
+            'unvisited E has no timestamps',
+          );
+          equal(
+            labels(scene)[0],
+            ['A', 'discovery: 1, finish: 8'],
+            'named DFS metrics',
+          );
+          for (let step = 0; step <= timeline.operationCount; step++) {
+            for (const metrics of Object.values(
+              getFrameScene(timeline, step).nodeMetrics,
+            )) {
+              if (
+                metrics.finish !== undefined &&
+                !(metrics.discovery < metrics.finish)
+              )
+                throw new Error('finish timestamp must follow discovery');
+            }
+          }
+        },
+      ],
+      [
+        'DFS cycles, a different start and helper-name collisions',
+        async () => {
+          const { scene } = await run(
+            'depth-first-search',
+            (source) =>
+              `const __trace_time0 = 99;\n${source.replace('D: []', "D: ['A']").replace("traverse(network, 'A')", "traverse(network, 'B')")}`,
+          );
+          equal(
+            ['A', 'B', 'C', 'D'].map((id) => scene.nodeMetrics[id]),
+            [
+              { discovery: 3, finish: 6 },
+              { discovery: 1, finish: 8 },
+              { discovery: 4, finish: 5 },
+              { discovery: 2, finish: 7 },
+            ],
+            'DFS timestamps from B through a cycle',
+          );
+        },
+      ],
+      [
+        'Dijkstra distance labels and unreachable nodes',
+        async () => {
+          const { scene } = await run('dijkstra-shortest-path');
+          equal(
+            labels(scene),
+            [
+              ['A', 'distance: 0'],
+              ['B', 'distance: 3'],
+              ['C', 'distance: 1'],
+              ['D', 'distance: 4'],
+              ['E', 'distance: ∞'],
+            ],
+            'weighted shortest-path distances',
+          );
+        },
+      ],
+      [
+        'Topological indegrees and output positions',
+        async () => {
+          const { timeline, scene } = await run('topological-sort');
+          equal(
+            ['A', 'B', 'C', 'D', 'E'].map((id) => scene.nodeMetrics[id]),
+            [
+              { indegree: 0, order: 1 },
+              { indegree: 0, order: 3 },
+              { indegree: 0, order: 4 },
+              { indegree: 0, order: 5 },
+              { indegree: 0, order: 2 },
+            ],
+            'topological positions',
+          );
+          equal(
+            labels(scene)[0],
+            ['A', 'indegree: 0, order: 1'],
+            'named topological metrics',
+          );
+          const counted = timeline.trace.frames.findIndex(
+            (frame) =>
+              frame.operation.type === 'assign' &&
+              frame.operation.target === 'queue',
+          );
+          equal(
+            ['A', 'B', 'C', 'D', 'E'].map(
+              (id) => getFrameScene(timeline, counted).nodeMetrics[id].indegree,
+            ),
+            [0, 1, 1, 2, 0],
+            'indegrees before processing',
+          );
+        },
+      ],
+      [
+        'Topological cycles leave blocked nodes unordered',
+        async () => {
+          const { scene } = await run('topological-sort', (source) =>
+            source.replace('D: []', "D: ['A']"),
+          );
+          equal(scene.nodeMetrics.E.order, 1, 'isolated vertex is processed');
+          equal(
+            ['A', 'B', 'C', 'D'].map((id) => scene.nodeMetrics[id].order),
+            [undefined, undefined, undefined, undefined],
+            'cycle has no fabricated output positions',
+          );
+        },
+      ],
+    ]) {
+      try {
+        await check();
+      } catch (error) {
+        failures.push(`${name}: ${error.message}`);
+      }
+    }
+    document.querySelector('#result').textContent = failures.length
+      ? `FAIL\n${failures.join('\n')}`
+      : 'PASS: BFS hop distances, DFS timestamps, topological metrics, cycles and trace replay.';
+    document.title = failures.length ? 'FAIL' : 'PASS';
+  </script>
+</html>

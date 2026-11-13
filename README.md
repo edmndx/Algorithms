@@ -4,6 +4,8 @@ A local-first web application for visualizing algorithms and data-structure prob
 
 Supported JavaScript code is instrumented into execution traces and replayed step by step as interactive D3.js and SVG visualizations.
 
+**Live website:** [edmndx.github.io/Algorithms](https://edmndx.github.io/Algorithms/)
+
 https://github.com/user-attachments/assets/cbb5d68b-888e-491e-bf28-0e52c365a7e6
 
 ## Features
@@ -27,10 +29,18 @@ https://github.com/user-attachments/assets/cbb5d68b-888e-491e-bf28-0e52c365a7e6
 
 ## Installation
 
+Requires Node.js 24 and npm 11 or newer.
+
 ```bash
-git clone https://github.com/edmndx/Algorithm-JavaScript-Visualizer.git
-cd Algorithm-JavaScript-Visualizer
-npm install
+git clone https://github.com/edmndx/Algorithms.git
+cd Algorithms
+npm ci
 npm run dev
 npm run build
 ```
+
+## Deployment
+
+GitHub Actions builds and deploys the website to [GitHub Pages](https://edmndx.github.io/Algorithms/) on every push to `main`. You can also run the **Deploy to GitHub Pages** workflow manually from the repository's Actions tab.
+
+The workflow publishes `dist/`. Vite's base path is `/Algorithms/` so assets and Web Workers load correctly from the project URL.

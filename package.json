@@ -19,15 +19,15 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/edmndx/Algorithm-JavaScript-Visualizer.git"
+    "url": "git+https://github.com/edmndx/Algorithms.git"
   },
   "keywords": [],
   "author": "",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/edmndx/Algorithm-JavaScript-Visualizer/issues"
+    "url": "https://github.com/edmndx/Algorithms/issues"
   },
-  "homepage": "https://github.com/edmndx/Algorithm-JavaScript-Visualizer#readme",
+  "homepage": "https://edmndx.github.io/Algorithms/",
   "dependencies": {
     "@monaco-editor/react": "^4.7.0",
     "acorn": "^8.18.0",
